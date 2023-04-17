@@ -3,7 +3,9 @@ from django.views.generic.edit import CreateView, FormView
 from django.views.generic.base import TemplateView, View
 from .forms import RegistForm, UserLoginForm
 from django.contrib.auth import authenticate, login, logout
-
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 class HomeView(TemplateView):
     template_name = 'home.html'
@@ -22,8 +24,11 @@ class UserLoginView(FormView):
         email = request.POST['email']
         password = request.POST['password']
         user = authenticate(email=email, password=password)
+        next_url = request.POST['next']
         if user is not None and user.is_active:
             login(request, user)
+        if next_url:
+            return redirect(next_url)
         return redirect('accounts:home')
 
 
@@ -32,3 +37,11 @@ class UserLogoutView(View):
     def get(self, request, *args, **kwargs):
         logout(request)
         return redirect('accounts:user_login')
+    
+@method_decorator(login_required, name='dispatch')
+class UserView(TemplateView):
+    template_name = 'user.html'
+    
+    # @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
